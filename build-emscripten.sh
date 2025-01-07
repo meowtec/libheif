@@ -41,17 +41,23 @@ if [ "$ENABLE_LIBDE265" = "1" ]; then
         -o libde265-${LIBDE265_VERSION}.tar.gz \
         https://github.com/strukturag/libde265/releases/download/v${LIBDE265_VERSION}/libde265-${LIBDE265_VERSION}.tar.gz
     if [ ! -s "libde265-${LIBDE265_VERSION}/libde265/.libs/libde265.a" ]; then
-        tar xf libde265-${LIBDE265_VERSION}.tar.gz
+        mkdir -p libde265-${LIBDE265_VERSION}/libde265-source
+        tar xf libde265-${LIBDE265_VERSION}.tar.gz -C libde265-${LIBDE265_VERSION}/libde265-source --strip-components=1
         cd libde265-${LIBDE265_VERSION}
-        [ -x configure ] || ./autogen.sh
-        CXXFLAGS=-O3 emconfigure ./configure --enable-static --disable-shared --disable-sse --disable-dec265 --disable-sherlock265
+
+        emcmake cmake libde265-source \
+            -DENABLE_SDL=0 \
+            -DBUILD_SHARED_LIBS=0 \
+            -DENABLE_DECODER=0 \
+            -DCMAKE_BUILD_TYPE=Release
+
         emmake make -j${CORES}
         cd ..
     fi
     LIBDE265_DIR="$(pwd)/libde265-${LIBDE265_VERSION}"
-    CONFIGURE_ARGS_LIBDE265="-DLIBDE265_INCLUDE_DIR=${LIBDE265_DIR} -DLIBDE265_LIBRARY=-L${LIBDE265_DIR}/libde265/.libs"
+    CONFIGURE_ARGS_LIBDE265="-DLIBDE265_INCLUDE_DIR=${LIBDE265_DIR}/libde265-source -DLIBDE265_LIBRARY=-L${LIBDE265_DIR}/libde265"
     LIBRARY_LINKER_FLAGS="$LIBRARY_LINKER_FLAGS -lde265"
-    LIBRARY_INCLUDE_FLAGS="$LIBRARY_INCLUDE_FLAGS -L${LIBDE265_DIR}/libde265/.libs"
+    LIBRARY_INCLUDE_FLAGS="$LIBRARY_INCLUDE_FLAGS -L${LIBDE265_DIR}/libde265"
 fi
 
 CONFIGURE_ARGS_AOM=""
